@@ -8,7 +8,8 @@ class GoogleSearchWeather
     static void Main(string[] args)
     {
         // Initialize ChromeDriver (Make sure ChromeDriver is installed and added to the PATH)
-        IWebDriver driver = new ChromeDriver();
+        WebDriver driver = new ChromeDriver(@"C:\Users\opilane\source\repos\xideme\Testing\Google Search\driver");
+
 
         try
         {
