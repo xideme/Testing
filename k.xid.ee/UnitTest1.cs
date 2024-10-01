@@ -1,85 +1,112 @@
 using System;
+using NUnit.Framework;
 using OpenQA.Selenium;
 using OpenQA.Selenium.Chrome;
 using OpenQA.Selenium.Support.UI;
 
-namespace k.xid.ee
+namespace k.xid.ee.Tests
 {
-    class Program
+    [TestFixture]
+    public class ContactFormTests
     {
-        static void Main(string[] args)
-        {
-            // Set up ChromeDriver
-            WebDriver driver = new ChromeDriver(@"C:\Users\opilane\source\repos\xideme\Testing\k.xid.ee\driver");
+        private IWebDriver driver;
+        private WebDriverWait wait;
 
+        [SetUp]
+        public void Setup()
+        {
+            driver = new ChromeDriver(@"C:\Users\opilane\source\repos\xideme\Testing\k.xid.ee\driver");
+            driver.Navigate().GoToUrl("https://k.xid.ee");
+            driver.Manage().Timeouts().PageLoad = TimeSpan.FromSeconds(10);  // Ensure full page load
+            wait = new WebDriverWait(driver, TimeSpan.FromSeconds(5));  
+        }
+
+
+
+        [Test]
+        public void SubmitContactFormTest()
+        {
             try
             {
-                // Navigate to the website
-                driver.Navigate().GoToUrl("https://k.xid.ee");
-
-                // Set up wait (optional, can be useful if you need to wait for page elements to load)
-                WebDriverWait wait = new WebDriverWait(driver, TimeSpan.FromSeconds(10));
-
-                System.Threading.Thread.Sleep(3000); 
-                // Try to find and click the "Kontakt" button
-                try
-                {
-                    IWebElement kontaktButton = driver.FindElement(By.LinkText("Kontakt"));
-                    Console.WriteLine("The 'Kontakt' button exists.");
-
-                    // Click the "Kontakt" button
+                    // Find and click the "Kontakt" button
+                    IWebElement kontaktButton = wait.Until(driver => driver.FindElement(By.LinkText("Kontakt")));
                     kontaktButton.Click();
-                    Console.WriteLine("Clicked the 'Kontakt' button.");
 
                     // Wait for the form to appear
-                    wait.Until(driver => driver.FindElement(By.Name("menu-655"))); // Wait for the dropdown to be present
+                    wait.Until(driver => driver.FindElement(By.Name("menu-655")));
 
                     // Fill out the form
-                    // Select "Vali oma riik"
                     IWebElement countryDropdown = driver.FindElement(By.Name("menu-655"));
                     SelectElement selectCountry = new SelectElement(countryDropdown);
-                    selectCountry.SelectByText("Eesti"); // Select Eesti from the dropdown
+                    selectCountry.SelectByText("Eesti");
+                    Thread.Sleep(1000);
 
-                    // Fill in the "Email" field
-                    IWebElement emailField = driver.FindElement(By.Name("your-email")); // Access the email field
-                    emailField.SendKeys("your-email@example.com");
+                    IWebElement emailField = driver.FindElement(By.Name("your-email"));
+                    emailField.SendKeys("email@xid.ee");
+                    Thread.Sleep(1000);
 
-                    // Fill in the "Teema" field (subject)
-                    IWebElement subjectField = driver.FindElement(By.Name("your-subject")); // Access the subject field
-                    subjectField.SendKeys("This is a test subject");
+                    IWebElement subjectField = driver.FindElement(By.Name("your-subject"));
+                    subjectField.SendKeys("Tere");
+                    Thread.Sleep(1000);
 
-                    // Fill in the optional "Kiri" field (message)
-                    IWebElement messageField = driver.FindElement(By.Name("your-message")); // Access the message field (textarea)
-                    messageField.SendKeys("This is a test message for the contact form.");
+                    IWebElement messageField = driver.FindElement(By.Name("your-message"));
+                    messageField.SendKeys("Kuidas laheb");
 
-                    Console.WriteLine("Form filled out successfully.");
-
-                    // Click the submit button
+                    // Submit the form
                     IWebElement submitButton = driver.FindElement(By.CssSelector("input.wpcf7-form-control.wpcf7-submit.has-spinner"));
                     submitButton.Click();
-                    Console.WriteLine("Clicked the submit button.");
+                    Thread.Sleep(3000);
 
                     // Wait for the success message to appear
-                    wait.Until(driver => driver.FindElement(By.ClassName("wpcf7-response-output"))); // Wait for the success message to be present
+                    IWebElement successMessage = wait.Until(driver =>
+                        driver.FindElement(By.ClassName("wpcf7-response-output"))
+                    );
 
-                    // Verify the success message
-                    IWebElement successMessage = driver.FindElement(By.ClassName("wpcf7-response-output")); // Access the success message div
-                    if (successMessage.Displayed && successMessage.Text.Contains("Täname sõnumi eest. See saadeti teele."))
-                    {
-                        Console.WriteLine("Success: " + successMessage.Text); // Show the message in console
-                    }
-                    System.Threading.Thread.Sleep(20000); // Wait for 5 seconds before quitting
+                    Assert.IsTrue(successMessage.Text.Contains("Täname sõnumi eest. See saadeti teele."),
+                                  $"Unexpected success message: {successMessage.Text}");
+
+                    Console.WriteLine("Test Success: " + successMessage.Text);
+            }
+            catch (WebDriverTimeoutException ex)
+            {
+                    Assert.Fail($"Test failed due to timeout: {ex.Message}");
+            }
+            catch (NoSuchElementException ex)
+            {
+                    Assert.Fail($"Test failed due to missing element: {ex.Message}");
+            }
+        }
+
+        [Test]
+        public void FaqButtonShouldExistTest()
+        {
+            // if the FAQ button exists
+            IWebElement faqButton = null;
+
+                try
+                {
+                    // find the FAQ button
+                    faqButton = driver.FindElement(By.LinkText("FAQ"));
                 }
                 catch (NoSuchElementException)
                 {
-                    Console.WriteLine("The 'Kontakt' button or form elements do not exist.");
-                    System.Threading.Thread.Sleep(5000); // Wait for 5 seconds before quitting
+                    // If the button is not found
+                    Assert.Fail("The 'FAQ' button was not found.");
                 }
-            }
-            finally
+
+            // If the button was found
+            Assert.IsTrue(faqButton.Displayed, "The 'FAQ' button is displayed.");
+            Console.WriteLine("The 'FAQ' button exists and is displayed.");
+        }
+
+
+        [TearDown]
+        public void Teardown()
+        {
+            if (driver != null)
             {
-                // Close the browser
                 driver.Quit();
+                driver.Dispose();
             }
         }
     }
